@@ -5,6 +5,9 @@ const auth = require('../middleware/auth');
 const AuditLog = require('../models/AuditLog');
 const User = require('../models/User');
 const checkPermission = require('../middleware/permission');
+const { checkLicenseActive, checkLicenseLimits } = require('../middleware/licenseGuard');
+
+router.use(checkLicenseActive);
 
 const checkInventoryRead = async (req, res, next) => {
     try {
@@ -77,7 +80,7 @@ router.get('/:id', [auth, checkInventoryRead], async (req, res) => {
 // @route   POST api/inventory
 // @desc    Create a new item
 // @access  Private
-router.post('/', [auth, checkPermission('items', 'full')], async (req, res) => {
+router.post('/', [auth, checkPermission('items', 'full'), checkLicenseLimits('item')], async (req, res) => {
     const { name, sku, barcode, description, quantity, price, sellingPrice, costPrice, status, category, subCategory, unitType, taxBracket, supplier, reorderPoint } = req.body;
 
     const baseSellingPrice = sellingPrice !== undefined ? sellingPrice : (price !== undefined ? price : 0);

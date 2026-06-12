@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const { checkLicenseLimits } = require('../middleware/licenseGuard');
 
 // Dynamic ACL Clearance Middleware: Allows access if operator is admin OR has Whitelisted access.users.
 const checkUsersClearance = (requiredLevel = 'view') => {
@@ -48,7 +49,7 @@ router.get('/', [auth, checkUsersClearance('view')], async (req, res) => {
 // @route   POST api/users
 // @desc    Create a new user manually by admin
 // @access  Private (Requires admin OR access.users whitelist)
-router.post('/', [auth, checkUsersClearance('full')], async (req, res) => {
+router.post('/', [auth, checkUsersClearance('full'), checkLicenseLimits('user')], async (req, res) => {
     const { username, password, role, access, allowedWarehouses } = req.body;
     try {
         const operator = await User.findById(req.user.id);

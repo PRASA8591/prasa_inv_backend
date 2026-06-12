@@ -4,6 +4,7 @@ const SystemSetting = require('../models/SystemSetting');
 const auth = require('../middleware/auth');
 const Item = require('../models/Item');
 const User = require('../models/User');
+const { validateLicenseKey, generateLicenseKey } = require('../utils/licenseHelper');
 
 const AuditLog = require('../models/AuditLog');
 const Customer = require('../models/Customer');
@@ -178,14 +179,23 @@ const calculateExpiry = (type, duration) => {
 };
 
 // @route   POST api/settings/activation/activate
-// @desc    Activate system trial or subscription
+// @desc    Activate system trial or subscription using License Key
 // @access  Private/Admin only
 router.post('/activation/activate', auth, async (req, res) => {
-    const { type, duration } = req.body;
+    const { licenseKey } = req.body;
     try {
         const currentUser = await User.findById(req.user.id);
         if (!currentUser || currentUser.role !== 'admin') {
             return res.status(403).json({ message: 'Access denied. Requires admin privileges.' });
+        }
+
+        if (!licenseKey) {
+            return res.status(400).json({ message: 'License Key is required.' });
+        }
+
+        const validation = validateLicenseKey(licenseKey);
+        if (!validation.valid) {
+            return res.status(400).json({ message: validation.error });
         }
 
         let settings = await SystemSetting.findOne();
@@ -193,13 +203,41 @@ router.post('/activation/activate', auth, async (req, res) => {
             settings = new SystemSetting({});
         }
 
-        const expiry = calculateExpiry(type, duration);
+        // Apply license configuration details
         settings.activationStatus = 'active';
-        settings.activationType = type;
+        settings.activationType = validation.type;
         settings.activationStartDate = new Date();
-        settings.activationExpiryDate = expiry;
+        settings.activationExpiryDate = validation.expiryDate;
+        
+        settings.licenseKey = licenseKey;
+        settings.licenseTier = validation.tier;
+        settings.licenseHolder = validation.holder;
+        settings.maxUsers = validation.limits.maxUsers;
+        settings.maxWarehouses = validation.limits.maxWarehouses;
+        settings.maxItems = validation.limits.maxItems;
+
+        // Push to activation history
+        settings.activationHistory.push({
+            licenseKey,
+            type: validation.type,
+            tier: validation.tier,
+            duration: validation.duration,
+            activatedAt: new Date(),
+            expiresAt: validation.expiryDate
+        });
 
         await settings.save();
+
+        // Audit Log Entry
+        await AuditLog.create({
+            userId: req.user.id,
+            username: currentUser.username,
+            action: 'LICENSE_ACTIVATE',
+            module: 'SETTINGS',
+            details: `System activated successfully using key: ${licenseKey.substring(0, 7)}... Plan: ${validation.tier} (${validation.duration}).`,
+            ipAddress: req.ip
+        });
+
         res.json(settings);
     } catch (err) {
         console.error(err.message);
@@ -222,11 +260,52 @@ router.post('/activation/deactivate', auth, async (req, res) => {
             settings = new SystemSetting({});
         }
 
+        // Reset settings properties
         settings.activationStatus = 'deactivated';
         settings.activationExpiryDate = new Date(); // Expire immediately
+        settings.licenseKey = null;
+        settings.licenseTier = 'Trial Mode';
+        settings.licenseHolder = 'Evaluation User';
+        settings.maxUsers = 5;
+        settings.maxWarehouses = 2;
+        settings.maxItems = 100;
 
         await settings.save();
+
+        // Audit Log Entry
+        await AuditLog.create({
+            userId: req.user.id,
+            username: currentUser.username,
+            action: 'LICENSE_DEACTIVATE',
+            module: 'SETTINGS',
+            details: 'System license manually deactivated by administrator. Capacity limits reset to evaluation defaults.',
+            ipAddress: req.ip
+        });
+
         res.json(settings);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+// @route   POST api/settings/activation/generate-key
+// @desc    Developer/Reseller license key generator
+// @access  Private/Admin only
+router.post('/activation/generate-key', auth, async (req, res) => {
+    const { tierCode, durationCode, holderName } = req.body;
+    try {
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser || currentUser.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Requires admin privileges.' });
+        }
+
+        if (!tierCode || !durationCode) {
+            return res.status(400).json({ message: 'Missing tierCode or durationCode for key generation.' });
+        }
+
+        const licenseKey = generateLicenseKey(tierCode, durationCode, holderName || 'PrasaTek Client');
+        res.json({ licenseKey });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');

@@ -4,6 +4,7 @@ const Warehouse = require('../models/Warehouse');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const checkPermission = require('../middleware/permission');
+const { checkLicenseLimits } = require('../middleware/licenseGuard');
 
 // @route   GET api/warehouses
 // @desc    Get all warehouses
@@ -21,7 +22,7 @@ router.get('/', auth, async (req, res) => {
 // @route   POST api/warehouses
 // @desc    Create a new warehouse
 // @access  Private
-router.post('/', [auth, checkPermission('locations', 'full')], async (req, res) => {
+router.post('/', [auth, checkPermission('locations', 'full'), checkLicenseLimits('warehouse')], async (req, res) => {
     const { name, code, address, status, phone, email, type, manager, allowedPages, isMain } = req.body;
     if (!name || !code) {
         return res.status(400).json({ message: 'Name and Code are required' });

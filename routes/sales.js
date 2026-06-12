@@ -8,6 +8,9 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const checkPermission = require('../middleware/permission');
 const SystemSetting = require('../models/SystemSetting');
+const { checkLicenseActive } = require('../middleware/licenseGuard');
+
+router.use(checkLicenseActive);
 
 const checkSalesRead = async (req, res, next) => {
     try {

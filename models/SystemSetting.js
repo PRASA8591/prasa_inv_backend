@@ -86,7 +86,41 @@ const systemSettingSchema = new mongoose.Schema({
     activationExpiryDate: {
         type: Date,
         default: null
-    }
+    },
+    licenseKey: {
+        type: String,
+        default: null
+    },
+    licenseTier: {
+        type: String,
+        default: 'Trial Mode'
+    },
+    licenseHolder: {
+        type: String,
+        default: 'Evaluation User'
+    },
+    maxUsers: {
+        type: Number,
+        default: 5
+    },
+    maxWarehouses: {
+        type: Number,
+        default: 2
+    },
+    maxItems: {
+        type: Number,
+        default: 100
+    },
+    activationHistory: [
+        {
+            licenseKey: { type: String },
+            type: { type: String },
+            tier: { type: String },
+            duration: { type: String },
+            activatedAt: { type: Date },
+            expiresAt: { type: Date }
+        }
+    ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('SystemSetting', systemSettingSchema);
