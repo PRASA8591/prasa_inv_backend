@@ -15,6 +15,8 @@ const supplyChainRoutes = require('./routes/supplychain');
 const invoiceRoutes = require('./routes/invoices');
 const shiftRoutes = require('./routes/shifts');
 const warehouseRoutes = require('./routes/warehouses');
+const stockTransferRoutes = require('./routes/transfers');
+
 
 const app = express();
 
@@ -237,6 +239,8 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/transfers', stockTransferRoutes);
+
 
 app.get('/api/ping', async (req, res) => {
     try {
