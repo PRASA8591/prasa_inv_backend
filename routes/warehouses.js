@@ -43,7 +43,7 @@ router.post('/', [auth, checkPermission('locations', 'full'), checkLicenseLimits
             type: type || 'Warehouse',
             manager: manager || '',
             status: status || 'active',
-            allowedPages: allowedPages || ['dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price', 'crm', 'supply', 'invoices', 'users', 'reports', 'settings'],
+            allowedPages: allowedPages || ['dashboard', 'items', 'stock', 'transfers', 'shifts', 'direct_stock', 'pos', 'price', 'crm', 'supply', 'invoices', 'users', 'reports', 'settings', 'locations'],
             isMain: isMain || false
         });
 

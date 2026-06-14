@@ -47,7 +47,11 @@ const userSchema = new mongoose.Schema({
         recent_bills: { type: Boolean, default: false },
         recent_bills_edit: { type: Boolean, default: false },
         audit_logs: { type: Boolean, default: false },
-        audit_logs_edit: { type: Boolean, default: false }
+        audit_logs_edit: { type: Boolean, default: false },
+        transfers: { type: Boolean, default: true },
+        transfers_edit: { type: Boolean, default: true },
+        shifts: { type: Boolean, default: true },
+        shifts_edit: { type: Boolean, default: true }
     },
     allowedWarehouses: [{
         type: mongoose.Schema.Types.ObjectId,

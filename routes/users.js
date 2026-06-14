@@ -91,7 +91,11 @@ router.post('/', [auth, checkUsersClearance('full'), checkLicenseLimits('user')]
                 settings: false,
                 approvals: false,
                 recent_bills: false,
-                direct_stock: true
+                direct_stock: true,
+                transfers: true,
+                transfers_edit: true,
+                shifts: true,
+                shifts_edit: true
             },
             allowedWarehouses: allowedWarehouses || []
         });
@@ -126,7 +130,11 @@ router.post('/', [auth, checkUsersClearance('full'), checkLicenseLimits('user')]
                 settings: true,
                 approvals: true,
                 recent_bills: true,
-                direct_stock: true
+                direct_stock: true,
+                transfers: true,
+                transfers_edit: true,
+                shifts: true,
+                shifts_edit: true
             };
         }
 
@@ -219,7 +227,11 @@ router.put('/:id', [auth, checkUsersClearance('full')], async (req, res) => {
                 settings: true,
                 approvals: true,
                 recent_bills: true,
-                direct_stock: true
+                direct_stock: true,
+                transfers: true,
+                transfers_edit: true,
+                shifts: true,
+                shifts_edit: true
             };
             user.markModified('access');
         }

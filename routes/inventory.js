@@ -306,7 +306,7 @@ router.delete('/:id', [auth, checkPermission('items', 'full')], async (req, res)
 // @route   POST api/inventory/transfer
 // @desc    Transfer stock between warehouses
 // @access  Private
-router.post('/transfer', [auth, checkPermission('stock', 'full')], async (req, res) => {
+router.post('/transfer', [auth, checkPermission('transfers', 'full')], async (req, res) => {
     const { itemId, batchNumber, fromWarehouseId, toWarehouseId, quantity } = req.body;
 
     if (!itemId || !batchNumber || !fromWarehouseId || !toWarehouseId || quantity <= 0) {

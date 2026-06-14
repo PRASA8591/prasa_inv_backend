@@ -166,7 +166,13 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
                 reports: true,
                 settings: true,
                 approvals: true,
-                recent_bills: true
+                recent_bills: true,
+                audit_logs: true,
+                audit_logs_edit: true,
+                transfers: true,
+                transfers_edit: true,
+                shifts: true,
+                shifts_edit: true
             }
         });
         console.log('Initial admin user created: admin / admin123');
@@ -176,7 +182,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
         const splitKeys = [
             'dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price', 
             'crm', 'supply', 'invoices', 'users', 'reports', 'locations', 
-            'settings', 'approvals', 'recent_bills', 'audit_logs'
+            'settings', 'approvals', 'recent_bills', 'audit_logs', 'transfers', 'shifts'
         ];
 
         for (let u of allUsers) {
@@ -219,6 +225,32 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
             if (changed) {
                 await User.updateOne({ _id: u._id }, { $set: { access } });
                 console.log(`Migrated advanced permissions for user: ${u.username}`);
+            }
+        }
+
+        // Run warehouse self-healing migration to ensure transfers, shifts, and locations are added to allowedPages list
+        const Warehouse = require('./models/Warehouse');
+        const allWarehouses = await Warehouse.find().lean();
+        for (let wh of allWarehouses) {
+            let changed = false;
+            let allowed = wh.allowedPages || [];
+            
+            if (!allowed.includes('transfers')) {
+                allowed.push('transfers');
+                changed = true;
+            }
+            if (!allowed.includes('shifts')) {
+                allowed.push('shifts');
+                changed = true;
+            }
+            if (!allowed.includes('locations')) {
+                allowed.push('locations');
+                changed = true;
+            }
+            
+            if (changed) {
+                await Warehouse.updateOne({ _id: wh._id }, { $set: { allowedPages: allowed } });
+                console.log(`Migrated allowed pages for warehouse: ${wh.name}`);
             }
         }
     }

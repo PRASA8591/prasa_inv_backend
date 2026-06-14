@@ -29,7 +29,7 @@ async function generateTransferNo() {
 // @route   GET api/transfers
 // @desc    Get all stock transfers
 // @access  Private
-router.get('/', auth, async (req, res) => {
+router.get('/', [auth, checkPermission('transfers', 'view')], async (req, res) => {
     try {
         const transfers = await StockTransfer.find()
             .populate('sourceWarehouse', 'name code')
@@ -49,7 +49,7 @@ router.get('/', auth, async (req, res) => {
 // @route   GET api/transfers/:id
 // @desc    Get stock transfer by ID
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', [auth, checkPermission('transfers', 'view')], async (req, res) => {
     try {
         const transfer = await StockTransfer.findById(req.params.id)
             .populate('sourceWarehouse', 'name code address phone email manager')
@@ -71,7 +71,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST api/transfers
 // @desc    Create a new transfer request (Pending)
 // @access  Private
-router.post('/', [auth, checkPermission('stock', 'full')], async (req, res) => {
+router.post('/', [auth, checkPermission('transfers', 'full')], async (req, res) => {
     const { sourceWarehouseId, destinationWarehouseId, items, remarks } = req.body;
 
     if (!sourceWarehouseId || !destinationWarehouseId) {
@@ -179,7 +179,7 @@ router.post('/', [auth, checkPermission('stock', 'full')], async (req, res) => {
 // @route   PUT api/transfers/:id
 // @desc    Update a stock transfer draft (items, remarks, destination)
 // @access  Private
-router.put('/:id', [auth, checkPermission('stock', 'full')], async (req, res) => {
+router.put('/:id', [auth, checkPermission('transfers', 'full')], async (req, res) => {
     const { destinationWarehouseId, items, remarks } = req.body;
 
     try {
@@ -287,8 +287,8 @@ router.put('/:id', [auth, checkPermission('stock', 'full')], async (req, res) =>
 router.post('/:id/approve', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        if (user.role !== 'admin' && (!user.access || (!user.access.approvals && !user.access.stock_edit && !user.access.stock))) {
-            return res.status(403).json({ message: 'Access denied. Requires approvals or stock edit permission.' });
+        if (user.role !== 'admin' && (!user.access || (!user.access.approvals && !user.access.transfers_edit && !user.access.transfers))) {
+            return res.status(403).json({ message: 'Access denied. Requires approvals or transfers permission.' });
         }
 
         const transfer = await StockTransfer.findById(req.params.id);
@@ -456,8 +456,8 @@ router.post('/:id/receive', auth, async (req, res) => {
 router.post('/:id/cancel', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        if (user.role !== 'admin' && (!user.access || (!user.access.approvals && !user.access.stock_edit && !user.access.stock))) {
-            return res.status(403).json({ message: 'Access denied. Requires approvals or stock edit permission.' });
+        if (user.role !== 'admin' && (!user.access || (!user.access.approvals && !user.access.transfers_edit && !user.access.transfers))) {
+            return res.status(403).json({ message: 'Access denied. Requires approvals or transfers permission.' });
         }
 
         const transfer = await StockTransfer.findById(req.params.id);

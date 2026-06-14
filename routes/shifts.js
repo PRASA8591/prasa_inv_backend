@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Shift = require('../models/Shift');
 const auth = require('../middleware/auth');
+const checkPermission = require('../middleware/permission');
 
 // Get all shifts history
-router.get('/', auth, async (req, res) => {
+router.get('/', [auth, checkPermission('shifts', 'view')], async (req, res) => {
     try {
         let warehouseId = req.query.warehouseId || req.user.currentWarehouse;
         if (req.user.role !== 'admin') {
