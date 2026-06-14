@@ -92,7 +92,7 @@ router.post('/login', rateLimitLogin, async (req, res) => {
         const Warehouse = require('../models/Warehouse');
         let needsSave = false;
 
-        const activeWarehouses = await Warehouse.find({ status: 'active' });
+        const activeWarehouses = await Warehouse.find({ status: 'active' }).lean();
         const activeWarehouseIds = activeWarehouses.map(w => String(w._id));
 
         if (user.role !== 'admin') {
@@ -165,7 +165,7 @@ router.post('/login', rateLimitLogin, async (req, res) => {
             .populate('allowedWarehouses');
 
         if (populatedUser.role === 'admin') {
-            const allWarehouses = await Warehouse.find({ status: 'active' });
+            const allWarehouses = await Warehouse.find({ status: 'active' }).lean();
             populatedUser = populatedUser.toObject();
             populatedUser.allowedWarehouses = allWarehouses;
         }
@@ -203,7 +203,7 @@ router.get('/user', auth, async (req, res) => {
 
         // Check if active warehouse is suspended/inactive
         if (userObj.role !== 'admin') {
-            const activeWarehouses = await Warehouse.find({ status: 'active' });
+            const activeWarehouses = await Warehouse.find({ status: 'active' }).lean();
             const activeWarehouseIds = activeWarehouses.map(w => String(w._id));
             
             const activeAllowedWarehouses = userObj.allowedWarehouses.filter(w => w.status === 'active');
@@ -241,7 +241,7 @@ router.get('/user', auth, async (req, res) => {
         }
 
         if (userObj.role === 'admin') {
-            const allWarehouses = await Warehouse.find({ status: 'active' });
+            const allWarehouses = await Warehouse.find({ status: 'active' }).lean();
             userObj = userObj.toObject ? userObj.toObject() : userObj;
             userObj.allowedWarehouses = allWarehouses;
         }
@@ -303,7 +303,7 @@ router.post('/switch-location', auth, async (req, res) => {
 
         if (populatedUser.role === 'admin') {
             const Warehouse = require('../models/Warehouse');
-            const allWarehouses = await Warehouse.find({ status: 'active' });
+            const allWarehouses = await Warehouse.find({ status: 'active' }).lean();
             populatedUser = populatedUser.toObject();
             populatedUser.allowedWarehouses = allWarehouses;
         }

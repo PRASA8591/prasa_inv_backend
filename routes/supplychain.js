@@ -25,7 +25,8 @@ router.get('/po', [auth, checkPermission('supply', 'view')], async (req, res) =>
         const pos = await PurchaseOrder.find(query)
             .populate('orderedBy', 'username')
             .populate('approvedBy', 'username')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
         res.json(pos);
     } catch (err) {
         console.error(err.message);
@@ -175,7 +176,7 @@ router.get('/grn', [auth, checkPermission('supply', 'view')], async (req, res) =
         if (warehouseId) {
             query.warehouseId = warehouseId;
         }
-        const grns = await GRN.find(query).populate('receivedBy', 'username').sort({ createdAt: -1 });
+        const grns = await GRN.find(query).populate('receivedBy', 'username').sort({ createdAt: -1 }).lean();
         res.json(grns);
     } catch (err) {
         console.error(err.message);
@@ -393,7 +394,7 @@ router.get('/returns', [auth, checkPermission('supply', 'view')], async (req, re
         if (warehouseId) {
             query.warehouseId = warehouseId;
         }
-        const returns = await SupplierReturn.find(query).populate('returnedBy', 'username').sort({ createdAt: -1 });
+        const returns = await SupplierReturn.find(query).populate('returnedBy', 'username').sort({ createdAt: -1 }).lean();
         res.json(returns);
     } catch (err) {
         console.error(err.message);

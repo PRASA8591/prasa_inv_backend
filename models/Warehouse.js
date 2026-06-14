@@ -42,7 +42,7 @@ const warehouseSchema = new mongoose.Schema({
     },
     allowedPages: {
         type: [String],
-        default: ['dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price', 'crm', 'supply', 'invoices', 'users', 'reports', 'settings', 'transfers', 'shifts', 'locations']
+        default: ['dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price', 'crm', 'supply', 'invoices', 'users', 'reports', 'settings', 'transfers', 'shifts', 'locations', 'approvals']
     },
     isMain: {
         type: Boolean,

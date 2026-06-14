@@ -18,7 +18,10 @@ const warehouseRoutes = require('./routes/warehouses');
 const stockTransferRoutes = require('./routes/transfers');
 
 
+const compression = require('compression');
+
 const app = express();
+app.use(compression());
 
 // Express HTTP Security Hardening Middleware
 app.use((req, res, next) => {
@@ -122,6 +125,16 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
         await safeIndex('purchaseorders', { warehouseId: 1 });
         await safeIndex('grns', { warehouseId: 1 });
         await safeIndex('supplierreturns', { warehouseId: 1 });
+
+        // Stock Transfers, shifts, and users indices for query speedup
+        await safeIndex('stocktransfers', { sourceWarehouse: 1 });
+        await safeIndex('stocktransfers', { destinationWarehouse: 1 });
+        await safeIndex('stocktransfers', { status: 1 });
+        await safeIndex('stocktransfers', { createdAt: -1 });
+        await safeIndex('shifts', { userId: 1 });
+        await safeIndex('shifts', { status: 1 });
+        await safeIndex('shifts', { createdAt: -1 });
+        await safeIndex('users', { username: 1 });
 
         console.log('[Performance] Database indexes verified and ensured.');
     } catch (indexErr) {
@@ -229,7 +242,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
             }
         }
 
-        // Run warehouse self-healing migration to ensure transfers, shifts, and locations are added to allowedPages list
+        // Run warehouse self-healing migration to ensure transfers, shifts, locations, and approvals are added to allowedPages list
         const Warehouse = require('./models/Warehouse');
         const allWarehouses = await Warehouse.find().lean();
         for (let wh of allWarehouses) {
@@ -246,6 +259,10 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
             }
             if (!allowed.includes('locations')) {
                 allowed.push('locations');
+                changed = true;
+            }
+            if (!allowed.includes('approvals')) {
+                allowed.push('approvals');
                 changed = true;
             }
 

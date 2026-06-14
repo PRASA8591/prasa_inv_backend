@@ -31,7 +31,7 @@ async function generateTransferNo() {
 // @access  Private
 router.get('/', [auth, checkPermission('transfers', 'view')], async (req, res) => {
     try {
-        const userObj = await User.findById(req.user.id);
+        const userObj = await User.findById(req.user.id).lean();
         let query = {};
         if (userObj.role !== 'admin') {
             query = {
@@ -48,7 +48,8 @@ router.get('/', [auth, checkPermission('transfers', 'view')], async (req, res) =
             .populate('approvedBy', 'username')
             .populate('receivedBy', 'username')
             .populate('cancelledBy', 'username')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
         res.json(transfers);
     } catch (err) {
         console.error(err.message);
@@ -67,11 +68,12 @@ router.get('/:id', [auth, checkPermission('transfers', 'view')], async (req, res
             .populate('initiatedBy', 'username')
             .populate('approvedBy', 'username')
             .populate('receivedBy', 'username')
-            .populate('cancelledBy', 'username');
+            .populate('cancelledBy', 'username')
+            .lean();
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
         }
-        const userObj = await User.findById(req.user.id);
+        const userObj = await User.findById(req.user.id).lean();
         if (userObj.role !== 'admin') {
             const hasAccess = userObj.allowedWarehouses.some(id => 
                 String(id) === String(transfer.sourceWarehouse?._id || transfer.sourceWarehouse) ||
