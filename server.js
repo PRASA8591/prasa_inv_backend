@@ -31,6 +31,7 @@ app.use((req, res, next) => {
 
 // CORS origin configuration: support local development, FRONTEND_URL, and Vercel previews
 const allowedOrigins = [
+    'https://inv.prasatek.site', // Added your production frontend
     'http://localhost:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5173',
@@ -47,10 +48,10 @@ app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, curl, or postman)
         if (!origin) return callback(null, true);
-        
-        const isAllowed = allowedOrigins.includes(origin) || 
-                          origin.endsWith('.vercel.app');
-                          
+
+        const isAllowed = allowedOrigins.includes(origin) ||
+            origin.endsWith('.vercel.app');
+
         if (isAllowed) {
             callback(null, true);
         } else {
@@ -81,7 +82,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
                 }
             }
         };
-        
+
         // Item collection indices
         await safeIndex('items', { barcode: 1 });
         await safeIndex('items', { name: 1 });
@@ -180,8 +181,8 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
         // Run database migration helper to convert any string access keys to boolean equivalents and ensure all split keys exist
         const allUsers = await User.find().lean();
         const splitKeys = [
-            'dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price', 
-            'crm', 'supply', 'invoices', 'users', 'reports', 'locations', 
+            'dashboard', 'items', 'stock', 'direct_stock', 'pos', 'price',
+            'crm', 'supply', 'invoices', 'users', 'reports', 'locations',
             'settings', 'approvals', 'recent_bills', 'audit_logs', 'transfers', 'shifts'
         ];
 
@@ -198,7 +199,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
 
             for (const key of splitKeys) {
                 const editKey = `${key}_edit`;
-                
+
                 // Initialize base key if missing
                 if (access[key] === undefined || access[key] === null) {
                     if (u.role === 'admin') {
@@ -234,7 +235,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
         for (let wh of allWarehouses) {
             let changed = false;
             let allowed = wh.allowedPages || [];
-            
+
             if (!allowed.includes('transfers')) {
                 allowed.push('transfers');
                 changed = true;
@@ -247,7 +248,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
                 allowed.push('locations');
                 changed = true;
             }
-            
+
             if (changed) {
                 await Warehouse.updateOne({ _id: wh._id }, { $set: { allowedPages: allowed } });
                 console.log(`Migrated allowed pages for warehouse: ${wh.name}`);
