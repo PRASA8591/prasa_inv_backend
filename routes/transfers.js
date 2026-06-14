@@ -31,7 +31,17 @@ async function generateTransferNo() {
 // @access  Private
 router.get('/', [auth, checkPermission('transfers', 'view')], async (req, res) => {
     try {
-        const transfers = await StockTransfer.find()
+        const userObj = await User.findById(req.user.id);
+        let query = {};
+        if (userObj.role !== 'admin') {
+            query = {
+                $or: [
+                    { sourceWarehouse: { $in: userObj.allowedWarehouses } },
+                    { destinationWarehouse: { $in: userObj.allowedWarehouses } }
+                ]
+            };
+        }
+        const transfers = await StockTransfer.find(query)
             .populate('sourceWarehouse', 'name code')
             .populate('destinationWarehouse', 'name code')
             .populate('initiatedBy', 'username')
@@ -61,6 +71,16 @@ router.get('/:id', [auth, checkPermission('transfers', 'view')], async (req, res
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
         }
+        const userObj = await User.findById(req.user.id);
+        if (userObj.role !== 'admin') {
+            const hasAccess = userObj.allowedWarehouses.some(id => 
+                String(id) === String(transfer.sourceWarehouse?._id || transfer.sourceWarehouse) ||
+                String(id) === String(transfer.destinationWarehouse?._id || transfer.destinationWarehouse)
+            );
+            if (!hasAccess) {
+                return res.status(403).json({ message: 'Access denied. You do not have permissions for this warehouse transfer.' });
+            }
+        }
         res.json(transfer);
     } catch (err) {
         console.error(err.message);
@@ -87,6 +107,13 @@ router.post('/', [auth, checkPermission('transfers', 'full')], async (req, res) 
         const destWH = await Warehouse.findById(destinationWarehouseId);
         if (!sourceWH || !destWH) {
             return res.status(404).json({ message: 'Source or destination warehouse not found.' });
+        }
+        const userObj = await User.findById(req.user.id);
+        if (userObj.role !== 'admin') {
+            const hasSourceAccess = userObj.allowedWarehouses.some(id => String(id) === String(sourceWarehouseId));
+            if (!hasSourceAccess) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to dispatch transfers from this warehouse.' });
+            }
         }
 
         const defaultWH = await Warehouse.findOne({ code: 'WH-MAIN' });
@@ -186,6 +213,19 @@ router.put('/:id', [auth, checkPermission('transfers', 'full')], async (req, res
         const transfer = await StockTransfer.findById(req.params.id);
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
+        }
+        const userObj = await User.findById(req.user.id);
+        if (userObj.role !== 'admin') {
+            const hasSourceAccess = userObj.allowedWarehouses.some(id => String(id) === String(transfer.sourceWarehouse));
+            if (!hasSourceAccess) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to edit transfers from this warehouse.' });
+            }
+            if (destinationWarehouseId) {
+                const hasDestAccess = userObj.allowedWarehouses.some(id => String(id) === String(destinationWarehouseId));
+                if (!hasDestAccess) {
+                    return res.status(403).json({ message: 'Access denied. You are not authorized to select this destination warehouse.' });
+                }
+            }
         }
 
         if (transfer.status !== 'Draft') {
@@ -295,6 +335,12 @@ router.post('/:id/approve', auth, async (req, res) => {
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
         }
+        if (user.role !== 'admin') {
+            const hasSourceAccess = user.allowedWarehouses.some(id => String(id) === String(transfer.sourceWarehouse));
+            if (!hasSourceAccess) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to approve dispatches from this warehouse.' });
+            }
+        }
 
         if (transfer.status !== 'Pending' && transfer.status !== 'Draft') {
             return res.status(400).json({ message: `Cannot approve transfer in "${transfer.status}" status.` });
@@ -372,6 +418,13 @@ router.post('/:id/receive', auth, async (req, res) => {
         const transfer = await StockTransfer.findById(req.params.id);
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
+        }
+        const userObj = await User.findById(req.user.id);
+        if (userObj.role !== 'admin') {
+            const hasDestAccess = userObj.allowedWarehouses.some(id => String(id) === String(transfer.destinationWarehouse));
+            if (!hasDestAccess) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to receive shipments at this warehouse.' });
+            }
         }
 
         if (transfer.status !== 'In Transit') {
@@ -463,6 +516,15 @@ router.post('/:id/cancel', auth, async (req, res) => {
         const transfer = await StockTransfer.findById(req.params.id);
         if (!transfer) {
             return res.status(404).json({ message: 'Transfer record not found.' });
+        }
+        if (user.role !== 'admin') {
+            const hasAccess = user.allowedWarehouses.some(id => 
+                String(id) === String(transfer.sourceWarehouse) || 
+                String(id) === String(transfer.destinationWarehouse)
+            );
+            if (!hasAccess) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to cancel transfers for this location.' });
+            }
         }
 
         if (transfer.status === 'Completed' || transfer.status === 'Cancelled') {
